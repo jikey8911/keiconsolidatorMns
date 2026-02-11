@@ -25,4 +25,18 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+/**
+ * System configuration table for storing encrypted API keys
+ * Stores Covalent and CoinGecko API keys in encrypted format
+ */
+export const systemConfig = mysqlTable("system_config", {
+  id: int("id").primaryKey().default(1), // Single row table
+  covalentApiKeyEncrypted: text("covalent_api_key_encrypted"),
+  coingeckoApiKeyEncrypted: text("coingecko_api_key_encrypted"),
+  isConfigured: int("is_configured").default(0).notNull(), // 0 = false, 1 = true
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SystemConfig = typeof systemConfig.$inferSelect;
+export type InsertSystemConfig = typeof systemConfig.$inferInsert;

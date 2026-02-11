@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, systemConfig } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,29 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+/**
+ * Get system configuration
+ */
+export async function getSystemConfig() {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get config: database not available");
+    return undefined;
+  }
+
+  const result = await db
+    .select()
+    .from(systemConfig)
+    .where(eq(systemConfig.id, 1))
+    .limit(1);
+
+  return result.length > 0 ? result[0] : undefined;
+}
+
+/**
+ * Check if system is configured
+ */
+export async function isSystemConfigured(): Promise<boolean> {
+  const config = await getSystemConfig();
+  return config ? config.isConfigured === 1 : false;
+}
