@@ -4,38 +4,49 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { AppProvider, useAppContext } from "./contexts/AppContext";
 import Home from "./pages/Home";
 import Admin from "./pages/Admin";
+import ConfigurationPage from "./pages/ConfigurationPage";
+import AnalysisPage from "./pages/AnalysisPage";
+import ConsolidationPage from "./pages/ConsolidationPage";
+import StatusPage from "./pages/StatusPage";
+import NotificationCenter from "./components/NotificationCenter";
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
-  return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/admin"} component={Admin} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
+  const { isConfigured, currentPage } = useAppContext();
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
+  // If not configured, always show configuration page
+  if (!isConfigured) {
+    return <ConfigurationPage />;
+  }
+
+  // Route based on currentPage state
+  switch (currentPage) {
+    case "config":
+      return <ConfigurationPage />;
+    case "analysis":
+      return <AnalysisPage />;
+    case "consolidation":
+      return <ConsolidationPage />;
+    case "status":
+      return <StatusPage />;
+    default:
+      return <AnalysisPage />;
+  }
+}
 
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+      <ThemeProvider defaultTheme="dark">
+        <AppProvider>
+          <TooltipProvider>
+            <Toaster />
+            <NotificationCenter />
+            <Router />
+          </TooltipProvider>
+        </AppProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
