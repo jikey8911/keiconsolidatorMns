@@ -45,3 +45,11 @@
 - [x] Crear contexto global (AppProvider) para gestión de estado
 - [x] Implementar NotificationCenter para mensajes en tiempo real
 - [x] Pruebas unitarias completas (16/16 tests pasando)
+
+## Flujo Mejorado - Análisis Previo a Claves Privadas
+- [x] Crear página unificada WalletAnalysisPage
+- [x] Implementar Step 1: Análisis de dirección de wallet
+- [x] Implementar Step 2: Captura de clave privada/frase de recuperación (solo después del análisis exitoso)
+- [x] Agregar opciones para saltar o guardar clave privada
+- [x] Integración con API de análisis
+- [x] Subir código a GitHub (jikey8911/KeiConsolidator)
