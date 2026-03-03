@@ -5,10 +5,8 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AppProvider, useAppContext } from "./contexts/AppContext";
-import Home from "./pages/Home";
-import Admin from "./pages/Admin";
 import ConfigurationPage from "./pages/ConfigurationPage";
-import AnalysisPage from "./pages/AnalysisPage";
+import WalletAnalysisPage from "./pages/WalletAnalysisPage";
 import ConsolidationPage from "./pages/ConsolidationPage";
 import StatusPage from "./pages/StatusPage";
 import NotificationCenter from "./components/NotificationCenter";
@@ -26,13 +24,13 @@ function Router() {
     case "config":
       return <ConfigurationPage />;
     case "analysis":
-      return <AnalysisPage />;
+      return <WalletAnalysisPage />;
     case "consolidation":
       return <ConsolidationPage />;
     case "status":
       return <StatusPage />;
     default:
-      return <AnalysisPage />;
+      return <WalletAnalysisPage />;
   }
 }
 
