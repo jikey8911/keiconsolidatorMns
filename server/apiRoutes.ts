@@ -9,13 +9,14 @@ import { analyzeWallet } from "./services/analysisService";
 import { isValidEthereumAddress, extractBearerToken, adminConfigSchema } from "./validators";
 import { encryptValue, decryptValue } from "./crypto";
 import { getDb } from "./db";
+import { ENV } from "./_core/env";
 import { systemConfig } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 
 const router = Router();
 
-// Master admin key - should be set in environment variables
-const MASTER_ADMIN_KEY = process.env.MASTER_ADMIN_KEY || "Keiconsolidator_Admin_MasterKey_2026_xyz789";
+// Master admin key - imported from environment
+const MASTER_ADMIN_KEY = ENV.masterAdminKey;
 
 /**
  * Middleware to verify admin authentication
@@ -98,8 +99,16 @@ router.post("/admin/config", verifyAdminAuth, async (req: Request, res: Response
         .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
         .join(", ");
       return res.status(400).json({
-        error: "Invalid configuration",
+        error: "Validation error",
         message: errorMessages,
+      });
+    }
+
+    const db = await getDb();
+    if (!db) {
+      return res.status(503).json({
+        error: "Database not available",
+        message: "Cannot save configuration at this time",
       });
     }
 
@@ -107,90 +116,63 @@ router.post("/admin/config", verifyAdminAuth, async (req: Request, res: Response
     const encryptedCovalent = encryptValue(covalentApiKey);
     const encryptedCoingecko = encryptValue(coingeckoApiKey);
 
-    // Save to database
-    const db = await getDb();
-    if (!db) {
-      return res.status(503).json({
-        error: "Database unavailable",
-        message: "Cannot connect to database",
-      });
-    }
-
-    // Check if config exists
-    const existing = await db
-      .select()
-      .from(systemConfig)
-      .where(eq(systemConfig.id, 1))
-      .limit(1);
-
-    if (existing.length > 0) {
-      // Update existing config
-      await db
-        .update(systemConfig)
-        .set({
-          covalentApiKeyEncrypted: encryptedCovalent,
-          coingeckoApiKeyEncrypted: encryptedCoingecko,
-          isConfigured: 1,
-          updatedAt: new Date(),
-        })
-        .where(eq(systemConfig.id, 1));
-    } else {
-      // Insert new config
-      await db.insert(systemConfig).values({
+    // Save to database using the correct column names
+    await db
+      .insert(systemConfig)
+      .values({
         id: 1,
         covalentApiKeyEncrypted: encryptedCovalent,
         coingeckoApiKeyEncrypted: encryptedCoingecko,
         isConfigured: 1,
+      })
+      .onDuplicateKeyUpdate({
+        set: {
+          covalentApiKeyEncrypted: encryptedCovalent,
+          coingeckoApiKeyEncrypted: encryptedCoingecko,
+          isConfigured: 1,
+        },
       });
-    }
 
     return res.status(200).json({
       success: true,
-      message: "Configuration saved successfully",
+      message: "API keys saved successfully",
     });
   } catch (error) {
-    console.error("Config save error:", error);
-
+    console.error("Config error:", error);
     return res.status(500).json({
       error: "Internal server error",
-      message: "Failed to save configuration",
+      message: "An error occurred while saving configuration",
     });
   }
 });
 
 /**
  * GET /api/v1/admin/config/status
- * Check if API keys are configured
+ * Check if system is configured
  */
 router.get("/admin/config/status", verifyAdminAuth, async (req: Request, res: Response) => {
   try {
     const db = await getDb();
     if (!db) {
       return res.status(503).json({
-        error: "Database unavailable",
-        message: "Cannot connect to database",
+        error: "Database not available",
+        message: "Cannot check configuration status at this time",
       });
     }
 
-    const config = await db
-      .select()
-      .from(systemConfig)
-      .where(eq(systemConfig.id, 1))
-      .limit(1);
+    const config = await db.select().from(systemConfig).where(eq(systemConfig.id, 1)).limit(1);
 
     const isConfigured = config.length > 0 && config[0].isConfigured === 1;
 
     return res.status(200).json({
       isConfigured,
-      message: isConfigured ? "API keys are configured" : "API keys are not configured",
-      lastUpdated: config.length > 0 ? config[0].updatedAt : null,
+      message: isConfigured ? "System is configured" : "System needs configuration",
     });
   } catch (error) {
-    console.error("Config status error:", error);
-
+    console.error("Status check error:", error);
     return res.status(500).json({
       error: "Internal server error",
-      message: "Failed to check configuration status",
+      message: "An error occurred while checking configuration status",
     });
   }
 });
@@ -200,7 +182,7 @@ router.get("/admin/config/status", verifyAdminAuth, async (req: Request, res: Re
  * Health check endpoint
  */
 router.get("/health", (req: Request, res: Response) => {
-  return res.status(200).json({
+  res.status(200).json({
     status: "ok",
     message: "Keiconsolidator API is running",
     timestamp: new Date().toISOString(),
