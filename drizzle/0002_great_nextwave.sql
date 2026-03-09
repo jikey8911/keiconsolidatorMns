@@ -1,0 +1,1 @@
+ALTER TABLE `system_config` DROP COLUMN `coingecko_api_key_encrypted`;

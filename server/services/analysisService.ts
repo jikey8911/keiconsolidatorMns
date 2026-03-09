@@ -1,6 +1,7 @@
 /**
  * Wallet Analysis Service
  * Orchestrates the analysis of wallet balances across multiple chains
+ * Uses only Covalent API for both balances and prices
  */
 
 import {
@@ -9,7 +10,6 @@ import {
   getSupportedChains,
   getNativeCurrencySymbol,
 } from "./covalentService";
-import { mapSymbolToCoinGeckoId, fetchTokenPrices } from "./coingeckoService";
 import { decryptValue } from "../crypto";
 import { getDb } from "../db";
 import { systemConfig } from "../../drizzle/schema";
@@ -43,9 +43,9 @@ export interface WalletAnalysisResult {
 }
 
 /**
- * Get API keys from encrypted database
+ * Get Covalent API key from encrypted database
  */
-async function getApiKeys(): Promise<{ covalent: string; coingecko: string } | null> {
+async function getApiKeys(): Promise<{ covalent: string } | null> {
   try {
     const db = await getDb();
     if (!db) {
@@ -66,21 +66,19 @@ async function getApiKeys(): Promise<{ covalent: string; coingecko: string } | n
 
     const configRecord = config[0];
 
-    if (!configRecord.covalentApiKeyEncrypted || !configRecord.coingeckoApiKeyEncrypted) {
-      console.log("API keys not configured");
+    if (!configRecord.covalentApiKeyEncrypted) {
+      console.log("Covalent API key not configured");
       return null;
     }
 
     try {
       const covalentKey = decryptValue(configRecord.covalentApiKeyEncrypted);
-      const coingeckoKey = decryptValue(configRecord.coingeckoApiKeyEncrypted);
 
       return {
         covalent: covalentKey,
-        coingecko: coingeckoKey,
       };
     } catch (error) {
-      console.error("Failed to decrypt API keys:", error);
+      console.error("Failed to decrypt API key:", error);
       return null;
     }
   } catch (error) {
@@ -91,61 +89,24 @@ async function getApiKeys(): Promise<{ covalent: string; coingecko: string } | n
 
 /**
  * Analyze a wallet across all supported chains
+ * Uses Covalent API for both balance and price data
  */
 export async function analyzeWallet(address: string): Promise<WalletAnalysisResult> {
   const apiKeys = await getApiKeys();
 
   if (!apiKeys) {
     throw new Error(
-      "API keys not configured. Please configure Covalent and CoinGecko keys in the admin panel."
+      "API keys not configured. Please configure the Covalent API key in the admin panel."
     );
   }
 
   const chains = getSupportedChains();
   const networkAnalyses: NetworkAnalysis[] = [];
-  const allTokenIds = new Set<string>();
 
   // Fetch balances from all chains
-  const chainBalances: Array<{
-    chainId: number;
-    nativeBalance: { balance: string; valueUSD: number } | null;
-    tokens: Token[];
-  }> = [];
-
   for (const chain of chains) {
     const nativeBalance = await fetchNativeBalance(address, chain.id, apiKeys.covalent);
     const tokens = await fetchTokenBalances(address, chain.id, apiKeys.covalent);
-
-    chainBalances.push({
-      chainId: chain.id,
-      nativeBalance,
-      tokens,
-    });
-
-    // Collect token IDs for price fetching
-    if (nativeBalance) {
-      const nativeSymbol = getNativeCurrencySymbol(chain.id);
-      const coinGeckoId = mapSymbolToCoinGeckoId(nativeSymbol);
-      allTokenIds.add(coinGeckoId);
-    }
-
-    tokens.forEach((token) => {
-      const coinGeckoId = mapSymbolToCoinGeckoId(token.symbol);
-      allTokenIds.add(coinGeckoId);
-    });
-  }
-
-  // Fetch all prices at once
-  const tokenPrices = await fetchTokenPrices(Array.from(allTokenIds), apiKeys.coingecko);
-
-  // Build network analyses
-  let totalValueUSD = 0;
-
-  for (let i = 0; i < chains.length; i++) {
-    const chain = chains[i];
-    const balances = chainBalances[i];
-
-    if (!balances) continue;
 
     let networkTotalUSD = 0;
 
@@ -156,36 +117,23 @@ export async function analyzeWallet(address: string): Promise<WalletAnalysisResu
       valueUSD: 0,
     };
 
-    if (balances.nativeBalance) {
-      const nativeSymbol = getNativeCurrencySymbol(chain.id);
-      const coinGeckoId = mapSymbolToCoinGeckoId(nativeSymbol);
-      const price = tokenPrices.get(coinGeckoId) || 0;
-      const valueUSD = parseFloat(balances.nativeBalance.balance) * price;
-
+    if (nativeBalance) {
       nativeCurrencyData = {
-        symbol: nativeSymbol,
-        balance: balances.nativeBalance.balance,
-        valueUSD,
+        symbol: getNativeCurrencySymbol(chain.id),
+        balance: nativeBalance.balance,
+        valueUSD: nativeBalance.valueUSD,
       };
 
-      networkTotalUSD += valueUSD;
+      networkTotalUSD += nativeBalance.valueUSD;
     }
 
-    // Process tokens
+    // Process tokens - Covalent already provides USD values
     const processedTokens: Token[] = [];
-    for (const token of balances.tokens) {
-      const coinGeckoId = mapSymbolToCoinGeckoId(token.symbol);
-      const price = tokenPrices.get(coinGeckoId) || 0;
-      const valueUSD = parseFloat(token.balance) * price;
-
-      if (valueUSD > 0) {
+    for (const token of tokens) {
+      if (token.valueUSD > 0) {
         // Only include tokens with value
-        processedTokens.push({
-          ...token,
-          valueUSD,
-        });
-
-        networkTotalUSD += valueUSD;
+        processedTokens.push(token);
+        networkTotalUSD += token.valueUSD;
       }
     }
 
@@ -198,10 +146,11 @@ export async function analyzeWallet(address: string): Promise<WalletAnalysisResu
         nativeCurrency: nativeCurrencyData,
         tokens: processedTokens,
       });
-
-      totalValueUSD += networkTotalUSD;
     }
   }
+
+  // Calculate total value
+  const totalValueUSD = networkAnalyses.reduce((sum, network) => sum + network.totalValueUSD, 0);
 
   return {
     address,

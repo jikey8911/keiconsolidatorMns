@@ -82,16 +82,15 @@ router.get("/analysis/:address", async (req: Request, res: Response) => {
 
 /**
  * POST /api/v1/admin/config
- * Save encrypted API keys to database
+ * Save encrypted Covalent API key to database
  */
 router.post("/admin/config", verifyAdminAuth, async (req: Request, res: Response) => {
   try {
-    const { covalentApiKey, coingeckoApiKey } = req.body;
+    const { covalentApiKey } = req.body;
 
     // Validate input
     const validation = adminConfigSchema.safeParse({
       covalentApiKey,
-      coingeckoApiKey,
     });
 
     if (!validation.success) {
@@ -112,9 +111,8 @@ router.post("/admin/config", verifyAdminAuth, async (req: Request, res: Response
       });
     }
 
-    // Encrypt API keys
+    // Encrypt API key
     const encryptedCovalent = encryptValue(covalentApiKey);
-    const encryptedCoingecko = encryptValue(coingeckoApiKey);
 
     // Save to database using the correct column names
     await db
@@ -122,20 +120,18 @@ router.post("/admin/config", verifyAdminAuth, async (req: Request, res: Response
       .values({
         id: 1,
         covalentApiKeyEncrypted: encryptedCovalent,
-        coingeckoApiKeyEncrypted: encryptedCoingecko,
         isConfigured: 1,
       })
       .onDuplicateKeyUpdate({
         set: {
           covalentApiKeyEncrypted: encryptedCovalent,
-          coingeckoApiKeyEncrypted: encryptedCoingecko,
           isConfigured: 1,
         },
       });
 
     return res.status(200).json({
       success: true,
-      message: "API keys saved successfully",
+      message: "Covalent API key saved successfully",
     });
   } catch (error) {
     console.error("Config error:", error);

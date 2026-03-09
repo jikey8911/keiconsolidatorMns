@@ -7,12 +7,12 @@ import { useAppContext } from "@/contexts/AppContext";
 
 /**
  * Configuration Page - Initial Setup (Mandatory)
+ * Only requires Covalent API key
  */
 export default function ConfigurationPage() {
   const { setIsConfigured, setCurrentPage, setMessage } = useAppContext();
   const [masterKey, setMasterKey] = useState("");
   const [covalentKey, setCovalentKey] = useState("");
-  const [coingeckoKey, setCoingeckoKey] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [configStatus, setConfigStatus] = useState<"unchecked" | "configured" | "pending">("unchecked");
   const [showApiFields, setShowApiFields] = useState(false);
@@ -43,7 +43,7 @@ export default function ConfigurationPage() {
           setTimeout(() => setCurrentPage("analysis"), 1500);
         } else {
           setShowApiFields(true);
-          setMessage({ type: "info", text: "Please configure your API keys" });
+          setMessage({ type: "info", text: "Please configure your Covalent API key" });
         }
       } else {
         setMessage({ type: "error", text: "Invalid master key" });
@@ -59,8 +59,8 @@ export default function ConfigurationPage() {
    * Save configuration
    */
   const handleSaveConfig = async () => {
-    if (!covalentKey.trim() || !coingeckoKey.trim()) {
-      setMessage({ type: "error", text: "Please fill in all API keys" });
+    if (!covalentKey.trim()) {
+      setMessage({ type: "error", text: "Please fill in the Covalent API key" });
       return;
     }
 
@@ -74,7 +74,6 @@ export default function ConfigurationPage() {
         },
         body: JSON.stringify({
           covalentApiKey: covalentKey,
-          coingeckoApiKey: coingeckoKey,
         }),
       });
 
@@ -82,7 +81,6 @@ export default function ConfigurationPage() {
         setConfigStatus("configured");
         setMessage({ type: "success", text: "Configuration saved successfully!" });
         setCovalentKey("");
-        setCoingeckoKey("");
         setIsConfigured(true);
         setTimeout(() => setCurrentPage("analysis"), 1500);
       } else {
@@ -98,115 +96,43 @@ export default function ConfigurationPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
+      <div className="w-full max-w-md space-y-6">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center space-y-2">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
               <Lock className="w-8 h-8 text-white" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">Keiconsolidator</h1>
+          <h1 className="text-3xl font-bold text-white">Keiconsolidator</h1>
           <p className="text-slate-400">Initial Configuration Required</p>
         </div>
 
         {/* Main Card */}
-        <Card className="bg-slate-900 border-slate-800">
+        <Card className="bg-slate-900/50 border-slate-700 backdrop-blur">
           <CardHeader>
             <CardTitle className="text-white">System Setup</CardTitle>
-            <CardDescription>Configure your API keys to enable wallet analysis</CardDescription>
+            <CardDescription>Configure your Covalent API key to enable wallet analysis</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4">
             {/* Master Key Input */}
             {!showApiFields && (
-              <div>
-                <label className="block text-sm font-medium text-slate-200 mb-2">
-                  Master Admin Key
-                </label>
-                <Input
-                  type="password"
-                  placeholder="Enter your master admin key"
-                  value={masterKey}
-                  onChange={(e) => setMasterKey(e.target.value)}
-                  disabled={isLoading}
-                  className="bg-slate-800 border-slate-700 text-white placeholder-slate-500"
-                />
-                <p className="text-xs text-slate-400 mt-2">
-                  This key is required to access and configure the system
-                </p>
-              </div>
-            )}
-
-            {/* API Keys Form */}
-            {showApiFields && (
               <>
-                <div>
-                  <label className="block text-sm font-medium text-slate-200 mb-2">
-                    Covalent API Key
-                  </label>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Master Admin Key</label>
                   <Input
                     type="password"
-                    placeholder="cqt_..."
-                    value={covalentKey}
-                    onChange={(e) => setCovalentKey(e.target.value)}
-                    disabled={isLoading}
-                    className="bg-slate-800 border-slate-700 text-white placeholder-slate-500"
+                    placeholder="Enter your master admin key"
+                    value={masterKey}
+                    onChange={(e) => setMasterKey(e.target.value)}
+                    className="bg-slate-800 border-slate-600 text-white placeholder-slate-500"
                   />
-                  <p className="text-xs text-slate-400 mt-1">
-                    Get your free key at{" "}
-                    <a
-                      href="https://www.covalenthq.com/platform/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-cyan-400 hover:text-cyan-300"
-                    >
-                      covalenthq.com
-                    </a>
-                  </p>
+                  <p className="text-xs text-slate-500">This key is required to access and configure the system</p>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-200 mb-2">
-                    CoinGecko API Key
-                  </label>
-                  <Input
-                    type="password"
-                    placeholder="CG-..."
-                    value={coingeckoKey}
-                    onChange={(e) => setCoingeckoKey(e.target.value)}
-                    disabled={isLoading}
-                    className="bg-slate-800 border-slate-700 text-white placeholder-slate-500"
-                  />
-                  <p className="text-xs text-slate-400 mt-1">
-                    Get your free key at{" "}
-                    <a
-                      href="https://www.coingecko.com/en/api/pricing"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-cyan-400 hover:text-cyan-300"
-                    >
-                      coingecko.com
-                    </a>
-                  </p>
-                </div>
-              </>
-            )}
-
-            {/* Status Message */}
-            {configStatus === "configured" && (
-              <div className="flex items-gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-                <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-green-300">System is configured and ready to use</p>
-              </div>
-            )}
-
-            {/* Buttons */}
-            <div className="flex gap-3">
-              {!showApiFields ? (
                 <Button
                   onClick={handleAuthenticate}
-                  disabled={!masterKey.trim() || isLoading}
-                  className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
                 >
                   {isLoading ? (
                     <>
@@ -217,51 +143,61 @@ export default function ConfigurationPage() {
                     "Authenticate"
                   )}
                 </Button>
-              ) : (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowApiFields(false);
-                      setCovalentKey("");
-                      setCoingeckoKey("");
-                    }}
-                    className="border-slate-700 text-slate-300 hover:bg-slate-800"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleSaveConfig}
-                    disabled={!covalentKey.trim() || !coingeckoKey.trim() || isLoading}
-                    className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      "Save Configuration"
-                    )}
-                  </Button>
-                </>
-              )}
-            </div>
+              </>
+            )}
+
+            {/* API Key Input */}
+            {showApiFields && (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Covalent API Key</label>
+                  <Input
+                    type="password"
+                    placeholder="Enter your Covalent API key"
+                    value={covalentKey}
+                    onChange={(e) => setCovalentKey(e.target.value)}
+                    className="bg-slate-800 border-slate-600 text-white placeholder-slate-500"
+                  />
+                  <p className="text-xs text-slate-500">
+                    Get your free API key at{" "}
+                    <a
+                      href="https://www.covalenthq.com/platform/auth/register/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-cyan-400 hover:text-cyan-300"
+                    >
+                      covalenthq.com
+                    </a>
+                  </p>
+                </div>
+                <Button
+                  onClick={handleSaveConfig}
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Configuration"
+                  )}
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 
-        {/* Info Box */}
-        <div className="mt-6 bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-          <div className="flex gap-3">
+        {/* Security Info */}
+        <Card className="bg-cyan-950/30 border-cyan-700/50">
+          <CardContent className="pt-4 flex gap-3">
             <AlertCircle className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-slate-200 mb-1">Security First</h3>
-              <p className="text-sm text-slate-400">
-                Your API keys are encrypted with AES-256-GCM and never exposed. This configuration is mandatory before using the system.
-              </p>
+            <div className="text-sm text-cyan-200">
+              Your API keys are encrypted with AES-256-GCM and never exposed. This configuration is mandatory before using the system.
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -12,10 +12,9 @@ export const ethereumAddressSchema = z
 // API key validation
 export const apiKeySchema = z.string().min(10, "API key must be at least 10 characters");
 
-// Admin configuration schema
+// Admin configuration schema - Only Covalent API key required
 export const adminConfigSchema = z.object({
   covalentApiKey: apiKeySchema,
-  coingeckoApiKey: apiKeySchema,
 });
 
 export type AdminConfig = z.infer<typeof adminConfigSchema>;
