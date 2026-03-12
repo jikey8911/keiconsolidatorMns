@@ -158,7 +158,7 @@ export default function WalletAnalysisPage() {
             </div>
             <Button
               variant="outline"
-              onClick={() => setCurrentPage("config")}
+              onClick={() => setCurrentPage("settings")}
               className="border-slate-700 text-slate-300 hover:bg-slate-800"
             >
               <Settings className="w-4 h-4 mr-2" />

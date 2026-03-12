@@ -28,8 +28,8 @@ export interface AppContextType {
   setTargetWallet: (value: string) => void;
 
   // UI State
-  currentPage: "config" | "analysis" | "consolidation" | "status";
-  setCurrentPage: (page: "config" | "analysis" | "consolidation" | "status") => void;
+  currentPage: "config" | "analysis" | "consolidation" | "status" | "settings";
+  setCurrentPage: (page: "config" | "analysis" | "consolidation" | "status" | "settings") => void;
   message: { type: "success" | "error" | "info"; text: string } | null;
   setMessage: (msg: { type: "success" | "error" | "info"; text: string } | null) => void;
 }
@@ -46,7 +46,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isConnectingMetaMask, setIsConnectingMetaMask] = useState(false);
   const [consolidationPlan, setConsolidationPlan] = useState(null);
   const [targetWallet, setTargetWallet] = useState("");
-  const [currentPage, setCurrentPage] = useState<"config" | "analysis" | "consolidation" | "status">("config");
+  const [currentPage, setCurrentPage] = useState<"config" | "analysis" | "consolidation" | "status" | "settings">("config");
   const [message, setMessage] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
 
   const value: AppContextType = {

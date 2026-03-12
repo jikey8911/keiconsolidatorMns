@@ -9,6 +9,7 @@ import ConfigurationPage from "./pages/ConfigurationPage";
 import WalletAnalysisPage from "./pages/WalletAnalysisPage";
 import ConsolidationPage from "./pages/ConsolidationPage";
 import StatusPage from "./pages/StatusPage";
+import SettingsPage from "./pages/SettingsPage";
 import NotificationCenter from "./components/NotificationCenter";
 
 function Router() {
@@ -29,6 +30,8 @@ function Router() {
       return <ConsolidationPage />;
     case "status":
       return <StatusPage />;
+    case "settings":
+      return <SettingsPage />;
     default:
       return <WalletAnalysisPage />;
   }
